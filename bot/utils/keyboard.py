@@ -16,6 +16,16 @@ def get_action_keyboard(category: str, extension: str) -> InlineKeyboardMarkup:
     
     return InlineKeyboardMarkup(buttons)
 
+def get_album_action_keyboard(category: str = "image") -> InlineKeyboardMarkup:
+    """Main menu after receiving an album of multiple files."""
+    buttons = [
+        [InlineKeyboardButton("📄 Merge All into Single PDF", callback_data="conv_merge_pdf")],
+        [InlineKeyboardButton("🔄 Convert All Formats", callback_data="act_convert")],
+        [InlineKeyboardButton("🗜️ Compress All (ZIP)", callback_data="act_compress")],
+        [InlineKeyboardButton("❌ Cancel", callback_data="act_cancel")]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
 def get_converters_keyboard(extension: str) -> InlineKeyboardMarkup:
     """Inline keyboard for available target conversion formats."""
     targets = get_available_conversions(extension)

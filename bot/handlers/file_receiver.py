@@ -1,14 +1,15 @@
+import asyncio
 from pathlib import Path
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from bot.config import MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB
 from bot.utils.file_manager import format_size
-from bot.utils.format_detector import detect_category, normalize_extension
-from bot.utils.keyboard import get_action_keyboard
+from bot.utils.format_detector import detect_category
+from bot.utils.keyboard import get_action_keyboard, get_album_action_keyboard
 
 async def file_receiver_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Receive and analyze incoming files, images, videos, and audio."""
+    """Receive and analyze incoming single files or grouped media albums."""
     msg = update.message
     if not msg:
         return
@@ -45,26 +46,88 @@ async def file_receiver_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if file_size > MAX_FILE_SIZE_BYTES:
         await msg.reply_text(
             f"❌ File too large ({format_size(file_size)}).\n"
-            f"The maximum allowed size is {MAX_FILE_SIZE_MB} MB due to Telegram Bot API limits."
+            f"The maximum allowed download size is {MAX_FILE_SIZE_MB} MB due to Telegram Bot API limits."
         )
         return
 
-    # Extract extension and category
     ext = Path(file_name).suffix.lstrip(".").lower()
     if not ext and msg.photo:
         ext = "jpg"
     category = detect_category(ext) or "other"
 
-    # Store file context in user session
-    context.user_data["active_file"] = {
+    file_item = {
         "file_id": tg_file.file_id,
         "file_unique_id": tg_file.file_unique_id,
         "file_name": file_name,
         "file_size": file_size,
         "extension": ext,
-        "category": category,
-        "local_path": None,
-        "workspace_dir": None
+        "category": category
+    }
+
+    # Handle Media Group (album of multiple images/files sent together)
+    media_group_id = msg.media_group_id
+    if media_group_id:
+        groups = context.bot_data.setdefault("media_groups", {})
+        if media_group_id not in groups:
+            groups[media_group_id] = {
+                "files": [],
+                "handled": False,
+                "category": category
+            }
+
+        groups[media_group_id]["files"].append(file_item)
+
+        # Wait for all items in the album to arrive from Telegram
+        await asyncio.sleep(0.7)
+
+        # Only one coroutine handles the album reply
+        if not groups[media_group_id]["handled"]:
+            groups[media_group_id]["handled"] = True
+            album_files = groups[media_group_id]["files"]
+            total_size = sum(f["file_size"] for f in album_files)
+
+            # Store album in user session
+            context.user_data["active_file"] = {
+                "is_album": True,
+                "album_id": media_group_id,
+                "files": album_files,
+                "file_name": f"Album ({len(album_files)} files)",
+                "file_size": total_size,
+                "extension": album_files[0]["extension"],
+                "category": groups[media_group_id]["category"]
+            }
+
+            file_list_str = "\n".join([f"  • `{f['file_name']}` ({format_size(f['file_size'])})" for f in album_files[:6]])
+            if len(album_files) > 6:
+                file_list_str += f"\n  • ...and {len(album_files) - 6} more"
+
+            caption = (
+                f"📥 *Received Album ({len(album_files)} files):*\n"
+                f"{file_list_str}\n\n"
+                f"• *Total Size:* `{format_size(total_size)}`\n"
+                f"• *Type:* {len(album_files)} files\n\n"
+                f"What would you like to do with these files?"
+            )
+
+            await msg.reply_text(
+                caption,
+                parse_mode="Markdown",
+                reply_markup=get_album_action_keyboard(groups[media_group_id]["category"])
+            )
+
+            # Clean up memory
+            groups.pop(media_group_id, None)
+        return
+
+    # Single File Flow
+    context.user_data["active_file"] = {
+        "is_album": False,
+        "file_id": tg_file.file_id,
+        "file_unique_id": tg_file.file_unique_id,
+        "file_name": file_name,
+        "file_size": file_size,
+        "extension": ext,
+        "category": category
     }
 
     category_badge = {
@@ -74,6 +137,7 @@ async def file_receiver_handler(update: Update, context: ContextTypes.DEFAULT_TY
         "document": "📄 Document",
         "data": "📊 Data File",
         "archive": "📦 Archive",
+        "code": "💻 Code File",
         "other": "📁 General File"
     }.get(category, "📁 File")
 

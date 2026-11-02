@@ -7,13 +7,14 @@ from bot.converters.dispatcher import execute_conversion
 from bot.converters.archive_converter import compress_to_zip
 from bot.utils.file_manager import create_user_workspace, cleanup_workspace, format_size
 from bot.utils.keyboard import get_converters_keyboard
+from bot.utils.session_recovery import resolve_active_file
 
 async def act_convert_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle click on 'Convert Format' button."""
     query = update.callback_query
     await query.answer()
 
-    active = context.user_data.get("active_file")
+    active = resolve_active_file(update, context)
     if not active:
         await query.edit_message_text("⚠️ No active file found. Please send your file again.")
         return
@@ -32,7 +33,7 @@ async def perform_conversion_callback(update: Update, context: ContextTypes.DEFA
     await query.answer()
 
     target_format = query.data.replace("conv_", "")
-    active = context.user_data.get("active_file")
+    active = resolve_active_file(update, context)
     if not active:
         await query.edit_message_text("⚠️ File session expired. Please re-send the file.")
         return

@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 
 from bot.utils.file_manager import format_size
 from bot.utils.keyboard import get_action_keyboard
+from bot.utils.session_recovery import resolve_active_file
 
 async def cancel_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /cancel command."""
@@ -21,7 +22,7 @@ async def act_back_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    active = context.user_data.get("active_file")
+    active = resolve_active_file(update, context)
     if not active:
         await query.edit_message_text("⚠️ Session expired. Please send the file again.")
         return
@@ -46,7 +47,7 @@ async def act_info_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    active = context.user_data.get("active_file")
+    active = resolve_active_file(update, context)
     if not active:
         await query.edit_message_text("⚠️ Session expired. Please send the file again.")
         return

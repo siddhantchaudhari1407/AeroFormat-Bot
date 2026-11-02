@@ -37,10 +37,11 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
+    PicklePersistence,
     filters
 )
 
-from bot.config import TELEGRAM_BOT_TOKEN, CLEANUP_INTERVAL_SECONDS
+from bot.config import TELEGRAM_BOT_TOKEN, CLEANUP_INTERVAL_SECONDS, TEMP_DIR
 from bot.handlers import (
     start_handler,
     help_handler,
@@ -86,7 +87,8 @@ def run():
     print("🤖 Starting Telegram File Converter & Compressor Bot...")
     start_health_check_server()
     start_auto_self_ping()
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    persistence = PicklePersistence(filepath=TEMP_DIR / "bot_sessions.pickle")
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).persistence(persistence).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start_handler))

@@ -6,13 +6,14 @@ from bot.converters.dispatcher import execute_compression
 from bot.converters.archive_converter import compress_to_zip
 from bot.utils.file_manager import create_user_workspace, cleanup_workspace, format_size
 from bot.utils.keyboard import get_compress_keyboard
+from bot.utils.session_recovery import resolve_active_file
 
 async def act_compress_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle click on 'Compress File' button."""
     query = update.callback_query
     await query.answer()
 
-    active = context.user_data.get("active_file")
+    active = resolve_active_file(update, context)
     if not active:
         await query.edit_message_text("⚠️ No active file found. Please send your file again.")
         return
@@ -33,7 +34,7 @@ async def perform_compression_callback(update: Update, context: ContextTypes.DEF
     await query.answer()
 
     mode = query.data
-    active = context.user_data.get("active_file")
+    active = resolve_active_file(update, context)
     if not active:
         await query.edit_message_text("⚠️ File session expired. Please re-send the file.")
         return

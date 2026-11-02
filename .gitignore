@@ -1,0 +1,24 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+
+# Environment secrets
+.env
+
+# Temporary storage
+temp_downloads/
+test_output/
+*.tmp
+
+# IDE files
+.vscode/
+.idea/

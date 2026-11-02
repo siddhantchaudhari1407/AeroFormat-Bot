@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: aeroformat-bot
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+      - key: CLEANUP_INTERVAL_SECONDS
+        value: "3600"

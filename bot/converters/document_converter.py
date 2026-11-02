@@ -1,6 +1,7 @@
+import csv
 import zipfile
 from pathlib import Path
-import pandas as pd
+import openpyxl
 
 def convert_pdf_to_docx(input_path: Path, output_dir: Path) -> Path:
     from pdf2docx import Converter
@@ -79,14 +80,23 @@ def convert_docx_to_txt(input_path: Path, output_dir: Path) -> Path:
 
 def convert_csv_to_xlsx(input_path: Path, output_dir: Path) -> Path:
     output_path = output_dir / f"{input_path.stem}.xlsx"
-    df = pd.read_csv(input_path)
-    df.to_excel(output_path, index=False)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    with open(input_path, "r", encoding="utf-8", errors="replace") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            ws.append(row)
+    wb.save(output_path)
     return output_path
 
 def convert_xlsx_to_csv(input_path: Path, output_dir: Path) -> Path:
     output_path = output_dir / f"{input_path.stem}.csv"
-    df = pd.read_excel(input_path)
-    df.to_csv(output_path, index=False)
+    wb = openpyxl.load_workbook(input_path, data_only=True)
+    ws = wb.active
+    with open(output_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        for row in ws.iter_rows(values_only=True):
+            writer.writerow([cell if cell is not None else "" for cell in row])
     return output_path
 
 def compress_pdf(input_path: Path, aggressive: bool, output_dir: Path) -> Path:

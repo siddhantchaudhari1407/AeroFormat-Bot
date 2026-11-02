@@ -9,6 +9,6 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: MAX_FILE_SIZE_MB
-        value: "50"
+        value: "20"
       - key: CLEANUP_INTERVAL_SECONDS
         value: "3600"

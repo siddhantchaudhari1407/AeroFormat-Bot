@@ -47,7 +47,10 @@ def convert_video(input_path: Path, target_format: str, output_dir: Path) -> Pat
             
         cmd.append(str(output_path))
         
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("FFmpeg video conversion timed out after 180 seconds.")
     if res.returncode != 0:
         raise RuntimeError(f"FFmpeg video conversion failed: {res.stderr}")
         
@@ -83,7 +86,10 @@ def compress_video(input_path: Path, mode: str, output_dir: Path) -> Path:
         
     cmd.append(str(output_path))
     
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("FFmpeg video compression timed out after 180 seconds.")
     if res.returncode != 0:
         raise RuntimeError(f"FFmpeg video compression failed: {res.stderr}")
         

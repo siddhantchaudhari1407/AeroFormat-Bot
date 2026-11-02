@@ -1,8 +1,8 @@
+import csv
 import json
 from pathlib import Path
 import yaml
 import xmltodict
-import pandas as pd
 import tomli_w
 try:
     import tomllib  # Python 3.11+
@@ -35,8 +35,9 @@ def convert_data(input_path: Path, target_format: str, output_dir: Path) -> Path
         data = tomllib.loads(content)
     elif src_ext in {"csv", "tsv"}:
         sep = "\t" if src_ext == "tsv" else ","
-        df = pd.read_csv(input_path, sep=sep)
-        data = df.to_dict(orient="records")
+        with open(input_path, "r", encoding="utf-8", errors="replace") as f:
+            reader = csv.DictReader(f, delimiter=sep)
+            data = list(reader)
     elif src_ext in {"ini", "env"}:
         # Simple key-value parser
         data = {}
@@ -74,13 +75,20 @@ def convert_data(input_path: Path, target_format: str, output_dir: Path) -> Path
             
     elif target_format in {"csv", "tsv"}:
         sep = "\t" if target_format == "tsv" else ","
-        if isinstance(data, list):
-            df = pd.DataFrame(data)
+        if isinstance(data, list) and data and isinstance(data[0], dict):
+            fieldnames = list(data[0].keys())
+            with open(output_path, "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=sep)
+                writer.writeheader()
+                writer.writerows(data)
         elif isinstance(data, dict):
-            df = pd.json_normalize(data)
+            with open(output_path, "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f, delimiter=sep)
+                writer.writerow(["Key", "Value"])
+                for k, v in data.items():
+                    writer.writerow([k, str(v)])
         else:
             raise ValueError("Data cannot be converted to tabular format.")
-        df.to_csv(output_path, sep=sep, index=False)
         
     elif target_format == "txt":
         with open(output_path, "w", encoding="utf-8") as f:

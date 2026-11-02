@@ -29,7 +29,10 @@ def convert_audio(input_path: Path, target_format: str, output_dir: Path) -> Pat
         
     cmd.append(str(output_path))
     
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("FFmpeg audio conversion timed out after 180 seconds.")
     if res.returncode != 0:
         raise RuntimeError(f"FFmpeg audio conversion failed: {res.stderr}")
         
@@ -59,7 +62,10 @@ def compress_audio(input_path: Path, mode: str, output_dir: Path) -> Path:
         str(output_path)
     ]
     
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("FFmpeg audio compression timed out after 180 seconds.")
     if res.returncode != 0:
         raise RuntimeError(f"FFmpeg audio compression failed: {res.stderr}")
         

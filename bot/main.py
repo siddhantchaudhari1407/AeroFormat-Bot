@@ -45,6 +45,7 @@ from bot.handlers import (
     start_handler,
     help_handler,
     formats_handler,
+    ping_handler,
     file_receiver_handler,
     act_convert_callback,
     perform_conversion_callback,
@@ -56,6 +57,7 @@ from bot.handlers import (
     act_info_callback
 )
 from bot.utils.file_manager import periodic_temp_cleanup
+from bot.utils.self_pinger import start_auto_self_ping
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -83,12 +85,14 @@ def run():
 
     print("🤖 Starting Telegram File Converter & Compressor Bot...")
     start_health_check_server()
+    start_auto_self_ping()
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("help", help_handler))
     app.add_handler(CommandHandler("formats", formats_handler))
+    app.add_handler(CommandHandler("ping", ping_handler))
     app.add_handler(CommandHandler("cancel", cancel_command_handler))
 
     # Action buttons

@@ -1,5 +1,8 @@
+import time
 from telegram import Update
 from telegram.ext import ContextTypes
+
+BOT_START_TIME = time.time()
 
 START_TEXT = """
 ⚡ *AeroFormat — Universal File Converter & Compressor*
@@ -86,3 +89,23 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def formats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /formats command."""
     await update.message.reply_text(FORMATS_TEXT, parse_mode="Markdown")
+
+async def ping_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /ping command to measure latency and verify uptime."""
+    t0 = time.time()
+    msg = await update.message.reply_text("🏓 Pinging...")
+    latency = int((time.time() - t0) * 1000)
+    uptime_sec = int(time.time() - BOT_START_TIME)
+    
+    hours, remainder = divmod(uptime_sec, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    uptime_str = f"{hours}h {minutes}m {seconds}s"
+
+    await msg.edit_text(
+        f"🏓 *Pong!*\n\n"
+        f"• *Latency:* `{latency} ms`\n"
+        f"• *Status:* 🟢 `Operational (24/7)`\n"
+        f"• *Uptime:* `{uptime_str}`\n"
+        f"• *Auto-Pinger:* ⚡ `Active (Render Keep-Alive)`",
+        parse_mode="Markdown"
+    )
